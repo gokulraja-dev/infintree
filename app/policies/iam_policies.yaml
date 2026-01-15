@@ -1,0 +1,72 @@
+permissions:
+  # --- System ---
+  - code: system.full_access
+    resource: system
+    action: full_access
+
+  # --- Departments ---
+  - code: department.create
+    resource: department
+    action: create
+  - code: department.read
+    resource: department
+    action: read
+  - code: department.update
+    resource: department
+    action: update
+  - code: department.delete
+    resource: department
+    action: delete
+
+  # --- Groups ---
+  - code: group.create
+    resource: group
+    action: create
+  - code: group.read
+    resource: group
+    action: read
+  - code: group.update
+    resource: group
+    action: update
+  - code: group.delete
+    resource: group
+    action: delete
+
+  # --- Documents ---
+  - code: document.create
+    resource: document
+    action: create
+  - code: document.read
+    resource: document
+    action: read
+  - code: document.update
+    resource: document
+    action: update
+  - code: document.delete
+    resource: document
+    action: delete
+  - code: document.restore
+    resource: document
+    action: restore
+
+roles:
+  ROOT_ADMIN:
+    - system.full_access
+
+  GROUP_MANAGER:
+    - group.*
+    - department.read
+    - document.*
+
+  GROUP_VIEWER:
+    - group.read
+    - department.read
+    - document.read
+
+  DEPARTMENT_MANAGER:
+    - department.read
+    - document.*
+
+  DEPARTMENT_VIEWER:
+    - department.read
+    - document.read
