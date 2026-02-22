@@ -1,19 +1,21 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from .repository import get_user_by_email, update_user
+from .repository import get_user_by_email, update_user, get_user_with_role, get_role_and_permissions, get_roles_by_scope_type
 from app.core.security import verify_password, hash_password
 from app.core.jwt.issuer import create_access_token
 from app.core.security import validate_password_complexity
-from .schemas import SetPasswordRequest
+from .schemas import SetPasswordRequest, RoleScope
 
 # Method to authenticate user and generate token
 async def authenticate_user(db: AsyncSession, email: str, password: str):
     if not email or not password:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Email and password are required")
 
-    user = await get_user_by_email(db, email)
-    if not user:
+    result = await get_user_with_role(db, email)
+    if not result:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials or user not found")
+    
+    user, user_role = result
 
     if not verify_password(password, user.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
@@ -21,8 +23,14 @@ async def authenticate_user(db: AsyncSession, email: str, password: str):
     if user.default_password is True:
         raise HTTPException(status_code=status.HTTP_428_PRECONDITION_REQUIRED, detail="Password change required")
 
+    role_data = await get_role_and_permissions(db, user_role.role_id)
+    if not role_data:
+        raise HTTPException(403, "Role misconfigured")
+
+    role_name, permissions = role_data
+
     return {
-        "access_token": create_access_token(user, aud="infintree"),
+        "access_token": create_access_token(user, role_name, permissions, user_role, aud="infintree"),
         "token_type": "bearer"
     }
 
@@ -52,3 +60,16 @@ async def update_user_password(db: AsyncSession, request: SetPasswordRequest):
     await update_user(db, user.id, password_hash=hashed_password, default_password=False)
 
     return {"msg": "Password updated successfully"}
+
+# Method to get the roles based on the given scope type
+async def get_roles(db: AsyncSession, scope_type):
+    roles = await get_roles_by_scope_type(db, scope_type)
+
+    return [
+        {
+            "id": str(role.id),
+            "name": role.name,
+            "scope_type": role.scope_type
+        }
+        for role in roles
+    ]

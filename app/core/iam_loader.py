@@ -14,31 +14,56 @@ async def load_iam_policies(db):
             db.add(Permission(**p))
     await db.commit()
 
-    # 2 Load roles & map permissions
-    for role_name, perm_codes in policies["roles"].items():
-        role = await db.scalar(select(Role).where(Role.name == role_name))
+    # 2 Load roles with scope
+    for role_name, role_data in policies["roles"].items():
+
+        scope_type = role_data["scope"]
+        perm_codes = role_data["permissions"]
+
+        role = await db.scalar(
+            select(Role).where(Role.name == role_name)
+        )
+
         if not role:
-            role = Role(name=role_name)
+            role = Role(
+                name=role_name,
+                scope_type=scope_type
+            )
             db.add(role)
             await db.commit()
+        else:
+            # Optional: update scope if changed
+            role.scope_type = scope_type
+            await db.commit()
 
+        # 3 Map permissions
         for code in perm_codes:
+
             if code.endswith(".*"):
-                scope = code.split(".")[0]
-                perms = (await db.scalars(
-                    select(Permission).where(Permission.resource == scope)
-                )).all()
+                resource = code.split(".")[0]
+                perms = (
+                    await db.scalars(
+                        select(Permission).where(Permission.resource == resource)
+                    )
+                ).all()
             else:
-                perms = [await db.scalar(select(Permission).where(Permission.code == code))]
+                perm = await db.scalar(
+                    select(Permission).where(Permission.code == code)
+                )
+                perms = [perm] if perm else []
 
             for p in perms:
-                if not p:
-                    continue
-                exists = await db.scalar(select(RolePermission).where(
-                    RolePermission.role_id == role.id,
-                    RolePermission.permission_id == p.id
-                ))
+                exists = await db.scalar(
+                    select(RolePermission).where(
+                        RolePermission.role_id == role.id,
+                        RolePermission.permission_id == p.id
+                    )
+                )
+
                 if not exists:
-                    db.add(RolePermission(role_id=role.id, permission_id=p.id))
+                    db.add(RolePermission(
+                        role_id=role.id,
+                        permission_id=p.id
+                    ))
 
         await db.commit()
