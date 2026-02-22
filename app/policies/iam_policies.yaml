@@ -49,24 +49,59 @@ permissions:
     resource: document
     action: restore
 
+  # --- Users ---
+  - code: user.create
+    resource: user
+    action: create
+  - code: user.read
+    resource: user
+    action: read
+  - code: user.update
+    resource: user
+    action: update
+  - code: user.delete
+    resource: user
+    action: delete
+  - code: user.assign_role
+    resource: user
+    action: assign_role
+
 roles:
   ROOT_ADMIN:
-    - system.full_access
+    scope: system
+    permissions:
+      - system.full_access
 
   GROUP_MANAGER:
-    - group.*
-    - department.read
-    - document.*
+    scope: group
+    permissions:
+      - group.*
+      - department.read
+      - document.*
+      - user.create
+      - user.read
+      - user.update
 
   GROUP_VIEWER:
-    - group.read
-    - department.read
-    - document.read
+    scope: group
+    permissions:
+      - group.read
+      - department.read
+      - document.read
+      - user.read
 
   DEPARTMENT_MANAGER:
-    - department.read
-    - document.*
+    scope: department
+    permissions:
+      - department.read
+      - document.*
+      - user.create
+      - user.read
+      - user.update
 
   DEPARTMENT_VIEWER:
-    - department.read
-    - document.read
+    scope: department
+    permissions:
+      - department.read
+      - document.read
+      - user.read

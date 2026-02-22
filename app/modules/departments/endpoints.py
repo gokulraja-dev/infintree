@@ -4,8 +4,8 @@ from typing import Annotated
 from app.db.debs import get_db
 from app.core.permission_dependancy import require_permission
 from app.modules.users.model import User
-from .schemas import CreateDepartmentRequest, UpdateDepartmentRequest
-from .usecases import create_department_usecase, get_all_departments_usecase, get_department_usecase, update_department_usecase, delete_department_usecase
+from .schemas import CreateDepartmentRequest, UpdateDepartmentRequest, CreateDepartmentUserRequest
+from .usecases import create_department_usecase, get_all_departments_usecase, get_department_usecase, update_department_usecase, delete_department_usecase, create_department_user_usecase, get_all_users_in_departments_usecase, remove_user_from_department_usecase
 
 # Router initialization
 router = APIRouter()
@@ -40,4 +40,22 @@ async def update_department_endpoint(db: db, department_id: str, request: Update
 @router.delete("")
 async def delete_department_endpoint(db: db, department_id: str, current_user: User = Depends(require_permission("departments.delete"))):
     resp = await delete_department_usecase(db, department_id)
+    return resp
+
+# Endpoint to create a new department user
+@router.post("/users")
+async def create_department_user_endpoint(db: db, request: CreateDepartmentUserRequest, current_user: User = Depends(require_permission("user.create"))):
+    resp = await create_department_user_usecase(db, request)
+    return resp
+
+# Endpoint to get all users in a department
+@router.get("/{department_id}/users")
+async def get_users_in_department_endpoint(db: db, department_id: str, current_user: User = Depends(require_permission("user.read"))):
+    resp = await get_all_users_in_departments_usecase(db, department_id)
+    return resp
+
+# Endpoint to remove a user from a department
+@router.delete("/{department_id}/users/{user_id}")
+async def remove_user_from_department_endpoint(db: db, department_id: str, user_id: str, current_user: User = Depends(require_permission("user.delete"))):
+    resp = await remove_user_from_department_usecase(db, department_id, user_id)
     return resp

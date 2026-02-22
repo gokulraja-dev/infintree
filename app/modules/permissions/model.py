@@ -20,6 +20,7 @@ class Role(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(100), unique=True)
+    scope_type: Mapped[str] = mapped_column(String(50))
 
 # Association table between roles and permissions
 class RolePermission(Base):
